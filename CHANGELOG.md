@@ -1,6 +1,27 @@
 Database cookbook README
 ========================
 
+v4.0.8 (2015-08-03)
+-------------------
+- #139 - Use a more reliable method of determining whether the
+   Postgres server accepts the REPLICATION attribute on user creation.
+   
+v4.0.7 (2015-07-27)
+-------------------
+- #161 - Fixes multiple issues causing the MySQL database user creation to not be idempotent 
+
+v4.0.6 (2015-04-29)
+-------------------
+- #126 - Use sql_query property instead of sql in the mysql provider for :query action
+
+v4.0.5 (2015-04-08)
+-------------------
+- #137/#138 - Removing log message containing password information
+
+v4.0.4 (2015-04-07)
+-------------------
+- Using unescaped db name in field value
+
 v4.0.3 (2015-02-22)
 -------------------
 - Unbreak postgresql_database_resource on older versions of PostgreSQL

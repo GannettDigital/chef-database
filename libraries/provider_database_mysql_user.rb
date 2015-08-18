@@ -94,21 +94,84 @@ class Chef
 
           db_name = new_resource.database_name ? "`#{new_resource.database_name}`" : '*'
           tbl_name = new_resource.table ? new_resource.table : '*'
+          test_table =  new_resource.database_name ? 'mysql.db' : 'mysql.user'
+          possible_global_privs = [
+            :select,
+            :insert,
+            :update,
+            :delete,
+            :create,
+            :drop,
+            :references,
+            :index,
+            :alter,
+            :create_tmp_table,
+            :lock_tables,
+            :create_view,
+            :show_view,
+            :create_routine,
+            :alter_routine,
+            :execute,
+            :event,
+            :trigger,
+            :reload,
+            :shutdown,
+            :process,
+            :file,
+            :show_db,
+            :super,
+            :repl_slave,
+            :repl_client,
+            :create_user
+          ]
+          possible_db_privs = [
+            :select,
+            :insert,
+            :update,
+            :delete,
+            :create,
+            :drop,
+            :references,
+            :index,
+            :alter,
+            :create_tmp_table,
+            :lock_tables,
+            :create_view,
+            :show_view,
+            :create_routine,
+            :alter_routine,
+            :execute,
+            :event,
+            :trigger
+          ]
+
+          if new_resource.privileges == [:all] && new_resource.database_name
+            desired_privs = possible_db_privs
+          elsif new_resource.privileges == [:all]
+            desired_privs = possible_global_privs
+          else
+            desired_privs = new_resource.privileges
+          end
 
           # Test
           incorrect_privs = nil
           begin
-            test_sql = 'SELECT * from mysql.db'
+            test_sql = "SELECT * from #{test_table}"
             test_sql += " WHERE User='#{new_resource.username}'"
             test_sql += " AND Host='#{new_resource.host}'"
-            test_sql += " AND Db='#{db_name}'"
+            test_sql += " AND Db='#{new_resource.database_name}'" if new_resource.database_name
             test_sql_results = test_client.query test_sql
 
             incorrect_privs = true if test_sql_results.size == 0
             # These should all by 'Y'
             test_sql_results.each do |r|
-              new_resource.privileges.each do |p|
-                key = "#{p.capitalize}_priv"
+              desired_privs.each do |p|
+                key = "#{p.capitalize}"
+                       .gsub(' ', '_')
+                       .gsub('Replication_', 'Repl_')
+
+                key = "#{key}_priv"
+
                 incorrect_privs = true if r[key] != 'Y'
               end
             end
@@ -127,7 +190,6 @@ class Chef
                 repair_sql += ' REQUIRE SSL' if new_resource.require_ssl
                 repair_sql += ' WITH GRANT OPTION' if new_resource.grant_option
 
-                Chef::Log.info("#{new_resource}: granting access with statement [#{repair_sql}]")
                 repair_client.query(repair_sql)
                 repair_client.query('FLUSH PRIVILEGES')
               ensure
@@ -140,7 +202,7 @@ class Chef
         def action_revoke
           db_name = new_resource.database_name ? "`#{new_resource.database_name}`" : '*'
           tbl_name = new_resource.table ? new_resource.table : '*'
-          
+
           revoke_statement = "REVOKE #{@new_resource.privileges.join(', ')}"
           revoke_statement += " ON #{db_name}.#{tbl_name}"
           revoke_statement += " FROM `#{@new_resource.username}`@`#{@new_resource.host}` "
