@@ -2,7 +2,7 @@
 # Author:: Seth Chisamore (<schisamo@chef.io>)
 # Author:: Lamont Granquist (<lamont@chef.io>)
 # Author:: Marco Betti (<m.betti@gmail.com>)
-# Copyright:: Copyright (c) 2011 Chef Software, Inc.
+# Copyright:: 2011-2015 Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,13 +42,11 @@ class Chef
               options += " #{@new_resource.createdb ? 'CREATEDB' : 'NOCREATEDB'}"
               options += " #{@new_resource.createrole ? 'CREATEROLE' : 'NOCREATEROLE'}"
               options += " #{@new_resource.login ? 'LOGIN' : 'NOLOGIN'}"
-              options += " #{@new_resource.replication ? 'REPLICATION' : 'NOREPLICATION'}" if version_greater_than?(90100)
+              options += " #{@new_resource.replication ? 'REPLICATION' : 'NOREPLICATION'}" if version_greater_than?(90_100)
               options += " #{@new_resource.superuser ? 'SUPERUSER' : 'NOSUPERUSER'}"
 
               statement = "CREATE USER \"#{@new_resource.username}\""
-              if options.length > 0
-                statement += " WITH #{options}"
-              end
+              statement += " WITH #{options}" if options.length > 0
 
               db('template1').query(statement)
               @new_resource.updated_by_last_action(true)
